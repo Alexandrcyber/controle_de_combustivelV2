@@ -152,12 +152,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="KM Rodados (Total)" value={totalKm.toLocaleString('pt-BR')} unit="km" />
-        <StatCard title="Custo de Combustível (Total)" value={totalFuelCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
-        <StatCard title="Despesas (Total)" value={totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
-        <StatCard title="Média Geral de Consumo" value={overallAvgKmL.toFixed(2)} unit="km/l" />
-      </div>
+      {filteredData.filteredTruckLogs.length === 0 && filteredData.filteredExpenses.length === 0 ? (
+        <div className="flex items-center justify-center bg-surface p-8 rounded-lg">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold mb-2">Nenhum dado encontrado</h3>
+            <p className="text-text-secondary">
+              {Object.values(filters).some(v => v !== '') 
+                ? 'Tente ajustar os filtros para ver mais dados.'
+                : 'Comece adicionando registros de viagens ou despesas.'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard title="KM Rodados (Total)" value={totalKm.toLocaleString('pt-BR')} unit="km" />
+          <StatCard title="Custo de Combustível (Total)" value={totalFuelCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
+          <StatCard title="Despesas (Total)" value={totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
+          <StatCard title="Média Geral de Consumo" value={overallAvgKmL.toFixed(2)} unit="km/l" />
+        </div>
+      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

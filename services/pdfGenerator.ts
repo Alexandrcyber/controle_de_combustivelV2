@@ -1,66 +1,89 @@
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
-// This assumes jspdf and html2canvas are loaded from a CDN.
-// We declare them to satisfy TypeScript.
-// We'll dynamically import html2canvas and jspdf to avoid relying on global CDN variables
-export const generatePdf = async (elementId: string, fileName: string): Promise<void> => {
+/**
+ * Gera um PDF estilizado em formato A4, com cabeçalho automático e quebra de páginas.
+ * @param elementId ID do elemento HTML que será capturado.
+ * @param fileName Nome base do arquivo PDF gerado.
+ */
+export const generateStyledPdf = async (
+  elementId: string,
+  fileName: string
+): Promise<void> => {
   try {
     const input = document.getElementById(elementId);
-    if (!input) {
-      console.error(`Element with id "${elementId}" not found.`);
-      return;
-    }
+    if (!input) throw new Error(`Elemento com id "${elementId}" não encontrado.`);
 
-    // Dynamic imports so we can ship the dependencies with the app (and let bundlers optimize)
-    const [{ default: html2canvas }, jspdfModule] = await Promise.all([
-      import('html2canvas'),
-      import('jspdf')
-    ]);
+    // Aguarda o React terminar de montar o DOM
+    await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    const { jsPDF } = jspdfModule;
+    const A4_WIDTH = 794;
+    const A4_HEIGHT = 1123;
+    const MARGIN = 20;
 
-    // To get a better quality of the image
+    // Cabeçalho
+    const header = document.createElement('div');
+    header.style.cssText = `
+      text-align: center;
+      padding: 16px;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 18px;
+      font-weight: bold;
+      border-bottom: 2px solid #38bdf8;
+    `;
+    const date = new Date().toLocaleDateString('pt-BR');
+    header.innerHTML = `📊 Relatório de Frotas — ${date}`;
+
+    // Clonar o conteúdo a ser impresso
+    const clone = input.cloneNode(true) as HTMLElement;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+      background-color: #0f172a;
+      color: white;
+      width: ${A4_WIDTH - MARGIN * 2}px;
+      padding: ${MARGIN}px;
+      font-family: sans-serif;
+    `;
+    wrapper.appendChild(header);
+    wrapper.appendChild(clone);
+
+    // Inserir fora da tela (visível para html2canvas)
+    wrapper.style.position = 'fixed';
+    wrapper.style.top = '-9999px';
+    wrapper.style.left = '-9999px';
+    document.body.appendChild(wrapper);
+
     const scale = 2;
-    // Use a white background to avoid color bleeding/overlay issues
-    const canvas = await html2canvas(input as HTMLElement, {
-      scale: scale,
+    const canvas = await html2canvas(wrapper, {
+      scale,
       useCORS: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#0f172a',
+      logging: false,
     });
 
     const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'px', [A4_WIDTH, A4_HEIGHT]);
 
-    // Use A4 paper size, portrait orientation
-    const pdf = new jsPDF('p', 'mm', 'a4');
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-
-    const ratio = imgWidth / imgHeight;
-    const widthInPdf = pdfWidth;
-    const heightInPdf = widthInPdf / ratio;
-
-    let heightLeft = heightInPdf;
+    const imgHeight = (canvas.height * A4_WIDTH) / canvas.width;
+    let heightLeft = imgHeight;
     let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
-    heightLeft -= pdfHeight;
+    pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH, imgHeight);
+    heightLeft -= A4_HEIGHT;
 
     while (heightLeft > 0) {
-      position = position - pdfHeight;
+      position -= A4_HEIGHT;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, widthInPdf, heightInPdf);
-      heightLeft -= pdfHeight;
+      pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH, imgHeight);
+      heightLeft -= A4_HEIGHT;
     }
 
-    // Format date for filename
-    const date = new Date().toISOString().split('T')[0];
     pdf.save(`${fileName}_${date}.pdf`);
-  } catch (err) {
-    // Surface the error to the console so the UI can handle it
-    console.error('Error generating PDF:', err);
-    throw err;
+    wrapper.remove();
+  } catch (error) {
+    console.error('Erro ao gerar PDF estilizado:', error);
+    throw error;
   }
 };

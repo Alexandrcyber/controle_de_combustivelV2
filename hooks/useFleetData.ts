@@ -5,18 +5,23 @@ import { TruckLog, Expense } from '../types';
 const API_BASE_URL = 'http://localhost:3001/api'; 
 
 export const useFleetData = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [truckLogs, setTruckLogs] = useState<TruckLog[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
       const [trucksResponse, expensesResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/truck-logs`),
         fetch(`${API_BASE_URL}/expenses`),
       ]);
 
       if (!trucksResponse.ok || !expensesResponse.ok) {
-        throw new Error('Failed to fetch data from the server.');
+        throw new Error('Falha ao carregar dados do servidor. Por favor, verifique se o servidor está rodando.');
       }
       
       const trucksData = await trucksResponse.json();
@@ -26,7 +31,9 @@ export const useFleetData = () => {
       setExpenses(expensesData);
     } catch (error) {
       console.error("Error fetching data:", error);
-      // You could set an error state here to display a message in the UI
+      setError(error instanceof Error ? error.message : 'Erro ao carregar dados');
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -36,57 +43,111 @@ export const useFleetData = () => {
 
   const addTruckLog = useCallback(async (log: Omit<TruckLog, 'id'>) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}/truck-logs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(log),
       });
-      if (!response.ok) throw new Error('Failed to add truck log.');
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || 'Falha ao adicionar registro de viagem.');
+      }
+      
       const newLog = await response.json();
       setTruckLogs(prev => [newLog, ...prev]);
+      setError(null);
     } catch (error) {
-      console.error("Error adding truck log:", error);
+      console.error("Erro ao adicionar registro:", error);
+      setError(error instanceof Error ? error.message : 'Erro ao adicionar registro de viagem');
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   const addExpense = useCallback(async (expense: Omit<Expense, 'id'>) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expense),
       });
-      if (!response.ok) throw new Error('Failed to add expense.');
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || 'Falha ao adicionar despesa.');
+      }
+      
       const newExpense = await response.json();
       setExpenses(prev => [newExpense, ...prev]);
+      setError(null);
     } catch (error) {
-      console.error("Error adding expense:", error);
+      console.error("Erro ao adicionar despesa:", error);
+      setError(error instanceof Error ? error.message : 'Erro ao adicionar despesa');
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
   
   const deleteTruckLog = useCallback(async (id: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}/truck-logs/${id}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Failed to delete truck log.');
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || 'Falha ao excluir registro de viagem.');
+      }
+      
       setTruckLogs(prev => prev.filter(log => log.id !== id));
-    } catch (error)      {
-      console.error("Error deleting truck log:", error);
+      setError(null);
+    } catch (error) {
+      console.error("Erro ao excluir registro:", error);
+      setError(error instanceof Error ? error.message : 'Erro ao excluir registro de viagem');
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   const deleteExpense = useCallback(async (id: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Failed to delete expense.');
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || 'Falha ao excluir despesa.');
+      }
+      
       setExpenses(prev => prev.filter(expense => expense.id !== id));
+      setError(null);
     } catch (error) {
-      console.error("Error deleting expense:", error);
+      console.error("Erro ao excluir despesa:", error);
+      setError(error instanceof Error ? error.message : 'Erro ao excluir despesa');
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  return { truckLogs, expenses, addTruckLog, addExpense, deleteTruckLog, deleteExpense };
+  return { 
+    truckLogs, 
+    expenses, 
+    addTruckLog, 
+    addExpense, 
+    deleteTruckLog, 
+    deleteExpense,
+    isLoading,
+    error,
+    refetch: fetchData
+  };
 };
