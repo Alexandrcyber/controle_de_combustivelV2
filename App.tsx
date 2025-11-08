@@ -31,9 +31,15 @@ const App: React.FC = () => {
     if (isGeneratingPdf) {
       // Use a timeout to ensure the DOM has been updated with the report view
       const timer = setTimeout(async () => {
-        await generatePdf('pdf-container', 'fleet_report');
-        setIsGeneratingPdf(false);
-      }, 500);
+        try {
+          await generatePdf('pdf-container', 'fleet_report');
+        } catch (err) {
+          console.error('Erro ao gerar PDF:', err);
+          // Você pode mostrar um toast/alert aqui se quiser
+        } finally {
+          setIsGeneratingPdf(false);
+        }
+      }, 700);
       return () => clearTimeout(timer);
     }
   }, [isGeneratingPdf]);
@@ -105,14 +111,18 @@ const App: React.FC = () => {
         </div>
       </div>
       {/* Off-screen container for PDF generation */}
-      <div 
-        style={{ 
-            position: 'fixed', 
-            left: '-9999px', 
-            top: 0, 
-            width: '1280px',
-            color: '#f8fafc',
-            fontFamily: 'sans-serif'
+      <div
+        style={{
+          // Mantemos o container no DOM e visível para que html2canvas capture estilos corretamente,
+          // mas fazemos com que seja invisível para o usuário (sem causar flashes de cor).
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          width: '1280px',
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: -9999,
+          fontFamily: 'sans-serif'
         }}
         className="bg-background"
       >

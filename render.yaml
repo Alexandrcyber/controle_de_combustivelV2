@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: controle-combustivel-api
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Você precisará adicionar manualmente a URL do Neon DB
+    healthCheckPath: /api/health
