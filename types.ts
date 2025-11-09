@@ -11,6 +11,12 @@ export interface TruckLog {
   idealKmLRoute: number;
   route: string;
   gasStation: string;
+  date: string;
+  driver: string;
+  truck: string;
+  start_km: number;
+  end_km: number;
+  fuel_consumed: number;
 }
 
 export interface Expense {
@@ -19,4 +25,8 @@ export interface Expense {
   supplier: string;
   description: string;
   cost: number;
+  date: string;
+  driver: string;
+  truck: string;
+  value: number;
 }

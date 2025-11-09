@@ -56,7 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, i
       <aside className={`absolute lg:relative flex-shrink-0 w-64 h-full bg-surface shadow-lg z-40 transform transition-transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="flex items-center justify-center h-20 border-b border-secondary">
             <FleetLogoIcon />
-            <h1 className="text-2xl font-bold ml-2">Fleet Pro</h1>
+            <h1 className="text-2xl font-bold ml-2">Unidade SC 🚛💨</h1>
         </div>
         <nav className="p-4">
           <ul>

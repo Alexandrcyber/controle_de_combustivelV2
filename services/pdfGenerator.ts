@@ -2,88 +2,95 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 /**
- * Gera um PDF estilizado em formato A4, com cabeçalho automático e quebra de páginas.
- * @param elementId ID do elemento HTML que será capturado.
- * @param fileName Nome base do arquivo PDF gerado.
+ * Gera um PDF A4 responsivo a partir de um elemento HTML.
+ * A chave é renderizar o elemento em um container com a largura fixa do A4
+ * ANTES de usar html2canvas, forçando os estilos responsivos (Tailwind) a se adaptarem.
+ * @param elementId ID do elemento HTML a ser capturado.
+ * @param fileName Nome base do arquivo PDF.
  */
 export const generateStyledPdf = async (
   elementId: string,
   fileName: string
 ): Promise<void> => {
   try {
-    const input = document.getElementById(elementId);
-    if (!input) throw new Error(`Elemento com id "${elementId}" não encontrado.`);
+    const sourceElement = document.getElementById(elementId);
+    if (!sourceElement) {
+      throw new Error(`Elemento com id "${elementId}" não encontrado.`);
+    }
 
-    // Aguarda o React terminar de montar o DOM
+    // Aguardar um ciclo de renderização para garantir que o React renderizou tudo.
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    const A4_WIDTH = 794;
-    const A4_HEIGHT = 1123;
-    const MARGIN = 20;
+    // Dimensões padrão do A4 em pixels (px) com 96 DPI, que é o padrão do CSS.
+    // A4: 210mm x 297mm. Polegadas: ~8.27in x 11.69in. Pixels: 8.27*96 x 11.69*96
+    const A4_WIDTH_PX = 794;
+    const A4_HEIGHT_PX = 1123;
+    
+    // 1. Criar um container temporário com a largura exata da página A4.
+    // Este é o passo mais importante para a responsividade.
+    const pdfContainer = document.createElement('div');
+    pdfContainer.style.width = `${A4_WIDTH_PX}px`;
+    // Posicionar fora da tela para não ser visível ao usuário.
+    pdfContainer.style.position = 'absolute';
+    pdfContainer.style.top = '-9999px';
+    pdfContainer.style.left = '0px';
 
-    // Cabeçalho
-    const header = document.createElement('div');
-    header.style.cssText = `
-      text-align: center;
-      padding: 16px;
-      background: #1e293b;
-      color: #f8fafc;
-      font-size: 18px;
-      font-weight: bold;
-      border-bottom: 2px solid #38bdf8;
-    `;
-    const date = new Date().toLocaleDateString('pt-BR');
-    header.innerHTML = `📊 Relatório de Frotas — ${date}`;
+    // 2. Clonar o conteúdo alvo para dentro do nosso container dimensionado.
+    // O navegador irá refazer o layout do conteúdo para caber na largura de 794px.
+    const contentClone = sourceElement.cloneNode(true) as HTMLElement;
+    pdfContainer.appendChild(contentClone);
+    document.body.appendChild(pdfContainer);
+    
+    // Pequeno delay para garantir que o navegador aplicou os estilos e o layout.
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Clonar o conteúdo a ser impresso
-    const clone = input.cloneNode(true) as HTMLElement;
-
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-      background-color: #0f172a;
-      color: white;
-      width: ${A4_WIDTH - MARGIN * 2}px;
-      padding: ${MARGIN}px;
-      font-family: sans-serif;
-    `;
-    wrapper.appendChild(header);
-    wrapper.appendChild(clone);
-
-    // Inserir fora da tela (visível para html2canvas)
-    wrapper.style.position = 'fixed';
-    wrapper.style.top = '-9999px';
-    wrapper.style.left = '-9999px';
-    document.body.appendChild(wrapper);
-
-    const scale = 2;
-    const canvas = await html2canvas(wrapper, {
-      scale,
+    // 3. Renderizar o container com html2canvas.
+    // As opções 'width' e 'windowWidth' reforçam a simulação de um viewport estreito.
+    const canvas = await html2canvas(pdfContainer, {
+      scale: 2, // Aumentar escala melhora a qualidade do texto e das imagens.
       useCORS: true,
-      backgroundColor: '#0f172a',
       logging: false,
+      backgroundColor: null, // Usar o fundo do elemento.
+      width: A4_WIDTH_PX,
+      windowWidth: A4_WIDTH_PX,
+    });
+
+    // 4. Limpar o DOM, removendo o container temporário.
+    document.body.removeChild(pdfContainer);
+
+    // 5. Configurar o jsPDF e adicionar a imagem do canvas.
+    const pdf = new jsPDF({
+      orientation: 'p', // 'portrait'
+      unit: 'px',
+      format: [A4_WIDTH_PX, A4_HEIGHT_PX],
+      hotfixes: ['px_scaling'], // Melhora a consistência de unidades 'px'.
     });
 
     const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'px', [A4_WIDTH, A4_HEIGHT]);
+    const canvasAspectRatio = canvas.height / canvas.width;
+    const imgHeight = A4_WIDTH_PX * canvasAspectRatio;
 
-    const imgHeight = (canvas.height * A4_WIDTH) / canvas.width;
     let heightLeft = imgHeight;
     let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH, imgHeight);
-    heightLeft -= A4_HEIGHT;
+    // Adiciona a primeira página
+    pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH_PX, imgHeight);
+    heightLeft -= A4_HEIGHT_PX;
 
+    // Adiciona páginas subsequentes se o conteúdo for mais longo que uma página
     while (heightLeft > 0) {
-      position -= A4_HEIGHT;
+      position -= A4_HEIGHT_PX;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH, imgHeight);
-      heightLeft -= A4_HEIGHT;
+      pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH_PX, imgHeight);
+      heightLeft -= A4_HEIGHT_PX;
     }
 
+    const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
     pdf.save(`${fileName}_${date}.pdf`);
-    wrapper.remove();
+
   } catch (error) {
     console.error('Erro ao gerar PDF estilizado:', error);
+    // Re-lançar o erro para que o chamador (App.tsx) possa tratá-lo (ex: mostrar alerta).
     throw error;
   }
 };
