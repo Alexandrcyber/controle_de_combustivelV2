@@ -36,11 +36,10 @@ const ReportHeader: React.FC = () => {
   );
 };
 
-// ✅ MUDANÇA: O componente agora recebe e usa as props
 export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) => {
-  // Adiciona uma verificação para evitar o crash se as props ainda forem undefined
+  // Verificação para garantir que os dados não são nulos, evitando crashes.
   if (!truckLogs || !expenses) {
-    return <div>Preparando dados para o relatório...</div>;
+    return <div>Carregando dados para o relatório...</div>;
   }
 
   return (
@@ -50,7 +49,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
 
         <main className="p-6">
           <section className="mb-8">
-            {/* ✅ MUDANÇA: Repassa as props para o Dashboard */}
+            {/* O Dashboard agora recebe os dados filtrados e exibe os totais corretos */}
             <Dashboard truckLogs={truckLogs} expenses={expenses} isPdfMode={true} />
           </section>
 
@@ -58,11 +57,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
             <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-primary pl-3">
               Detalhes das Viagens
             </h2>
-            {/* ✅ MUDANÇA: Repassa as props para o FleetData */}
+            {/* O FleetData também recebe os dados filtrados para a tabela */}
             <FleetData 
               type="truck" 
               data={truckLogs}
-              filteredData={truckLogs} // No PDF, data e filteredData são os mesmos
+              filteredData={truckLogs} // No PDF, os dados já estão filtrados, então data e filteredData são os mesmos.
               isPdfMode={true}
               onAdd={() => {}}
               onDelete={() => {}}
@@ -74,11 +73,10 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
             <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-primary pl-3">
               Detalhes das Despesas
             </h2>
-            {/* ✅ MUDANÇA: Repassa as props para o FleetData */}
             <FleetData 
               type="expense" 
               data={expenses}
-              filteredData={expenses} // No PDF, data e filteredData são os mesmos
+              filteredData={expenses} // Mesma lógica aqui.
               isPdfMode={true}
               onAdd={() => {}}
               onDelete={() => {}}
