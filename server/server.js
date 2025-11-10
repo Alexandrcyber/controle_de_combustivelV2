@@ -10,8 +10,17 @@ const Expense = require('./models/Expense');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// --- INÍCIO DA CORREÇÃO DE CORS ---
+// Configuração específica para permitir requisições apenas do seu frontend
+const corsOptions = {
+  origin: 'https://gestao-unidade-sc.netlify.app', // URL exata do seu site em produção
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions ));
+// --- FIM DA CORREÇÃO DE CORS ---
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 // Health check route
@@ -28,11 +37,9 @@ const connectAndSyncDb = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connection has been established successfully.');
     
-    // This creates tables if they don't exist (and does nothing if they already exist)
     await sequelize.sync(); 
     console.log('✅ All models were synchronized successfully.');
 
-    // Optional: Seed database with initial data if it's empty
     const logCount = await TruckLog.count();
     const expenseCount = await Expense.count();
     if (logCount === 0 && expenseCount === 0) {
@@ -49,9 +56,8 @@ const connectAndSyncDb = async () => {
       console.log('✅ Database seeded successfully.');
     }
 
-    // Start server
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`🚀 Server is running on http://localhost:${PORT}` );
     });
   } catch (error) {
     console.error('Unable to connect to the database or start server:', error);

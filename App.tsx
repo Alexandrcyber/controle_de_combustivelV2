@@ -7,8 +7,8 @@ import { ReportView } from './components/ReportView';
 import { DownloadIcon } from './components/icons';
 import { useFleetData } from './hooks/useFleetData';
 import { Alert } from './components/Alert';
-// ✅ Importa a SUA função de gerar PDF
 import { generateStyledPdf } from './services/pdfGenerator';
+import { LoadingSpinner } from './components/LoadingSpinner'; // ✅ Importa o componente de loading
 
 type View = 'dashboard' | 'truck-logs' | 'expenses';
 type AlertState = { message: string; type: 'success' | 'error' } | null;
@@ -36,11 +36,9 @@ const App: React.FC = () => {
     setIsGeneratingPdf(true);
     setAlert({ message: 'Gerando seu relatório, por favor aguarde...', type: 'success' });
 
-    // Espera o React renderizar o conteúdo do relatório no div escondido
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      // ✅ Chama a sua função, passando o ID do container e o nome do arquivo
       await generateStyledPdf('pdf-render-target', 'Relatorio_Frota');
       setAlert({ message: 'Relatório PDF gerado com sucesso!', type: 'success' });
     } catch (err) {
@@ -85,7 +83,7 @@ const App: React.FC = () => {
             
             <button 
               onClick={handlePdfDownload}
-              disabled={isGeneratingPdf}
+              disabled={isGeneratingPdf || isLoading} // Desabilita o botão também durante o loading inicial
               className="flex items-center gap-2 bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
             >
               <DownloadIcon />
@@ -93,18 +91,31 @@ const App: React.FC = () => {
             </button>
           </header>
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+            {/* --- INÍCIO DA CORREÇÃO DE LOADING E ERRO --- */}
             {isLoading ? (
-              <div>Carregando...</div>
+              <LoadingSpinner message="Nosso servidor gratuito pode demorar até 1 minuto para iniciar. Agradecemos a sua paciência!" />
              ) : error ? (
-              <div>Erro: {error}</div>
+              <div className="flex items-center justify-center h-full">
+                <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 max-w-lg text-center">
+                  <h3 className="text-red-400 font-semibold text-xl mb-3">Falha ao Carregar Dados</h3>
+                  <p className="text-text-primary mb-2">Não foi possível conectar ao servidor. Isso pode ser devido a um erro de rede ou à configuração do servidor (CORS).</p>
+                  <p className="text-slate-400 text-sm">Erro: {error}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="mt-6 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    Tentar Novamente
+                  </button>
+                </div>
+              </div>
             ) : (
               renderView()
             )}
+            {/* --- FIM DA CORREÇÃO DE LOADING E ERRO --- */}
           </main>
         </div>
       </div>
       
-      {/* ✅ Container de renderização para o PDF. Fica escondido. */}
       <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
         {isGeneratingPdf && (
           <div id="pdf-render-target">
