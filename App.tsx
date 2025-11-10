@@ -14,11 +14,19 @@ import { TruckLog, Expense } from './types';
 type View = 'dashboard' | 'truck-logs' | 'expenses';
 type AlertState = { message: string; type: 'success' | 'error' } | null;
 
+const initialFilterState = {
+    month: '',
+    truckModel: '',
+    licensePlate: '',
+    supplier: '',
+};
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [alert, setAlert] = useState<AlertState>(null);
+  const [filters, setFilters] = useState(initialFilterState);
   const [searchTerm, setSearchTerm] = useState('');
 
   const { 
@@ -32,23 +40,28 @@ const App: React.FC = () => {
     error
   } = useFleetData();
 
-  const filteredTruckLogs = useMemo(() => {
-    if (!searchTerm) return truckLogs;
-    return truckLogs.filter(log => 
-      Object.values(log).some(val => 
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+  const { filteredTruckLogs, filteredExpenses } = useMemo(() => {
+    const baseFilteredLogs = truckLogs.filter(log => 
+      (filters.month === '' || log.month === filters.month) &&
+      (filters.truckModel === '' || log.truckModel === filters.truckModel) &&
+      (filters.licensePlate === '' || log.licensePlate === filters.licensePlate)
     );
-  }, [truckLogs, searchTerm]);
 
-  const filteredExpenses = useMemo(() => {
-    if (!searchTerm) return expenses;
-    return expenses.filter(exp => 
-      Object.values(exp).some(val => 
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    const baseFilteredExpenses = expenses.filter(exp => 
+      (filters.month === '' || exp.month === filters.month) &&
+      (filters.supplier === '' || exp.supplier === filters.supplier)
     );
-  }, [expenses, searchTerm]);
+
+    const searchFilteredLogs = !searchTerm ? baseFilteredLogs : baseFilteredLogs.filter(log =>
+      Object.values(log).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const searchFilteredExpenses = !searchTerm ? baseFilteredExpenses : baseFilteredExpenses.filter(exp =>
+      Object.values(exp).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    return { filteredTruckLogs: searchFilteredLogs, filteredExpenses: searchFilteredExpenses };
+  }, [truckLogs, expenses, filters, searchTerm]);
 
   const handlePdfDownload = useCallback(async () => {
     if (isGeneratingPdf) return;
@@ -65,11 +78,15 @@ const App: React.FC = () => {
     }
   }, [isGeneratingPdf, filteredTruckLogs, filteredExpenses]);
 
+  const clearAllFilters = () => {
+    setFilters(initialFilterState);
+    setSearchTerm('');
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
-        // O dashboard principal sempre mostra todos os dados, não os filtrados
-        return <Dashboard truckLogs={truckLogs} expenses={expenses} />;
+        return <Dashboard truckLogs={filteredTruckLogs} expenses={filteredExpenses} />;
       case 'truck-logs':
         return (
           <FleetData
@@ -93,7 +110,7 @@ const App: React.FC = () => {
           />
         );
       default:
-        return <Dashboard truckLogs={truckLogs} expenses={expenses} />;
+        return <Dashboard truckLogs={filteredTruckLogs} expenses={filteredExpenses} />;
     }
   };
 
@@ -107,6 +124,7 @@ const App: React.FC = () => {
           setCurrentView={setCurrentView} 
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}
+          clearFilters={clearAllFilters}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="flex justify-between items-center p-4 bg-surface shadow-md lg:justify-end">
@@ -126,8 +144,6 @@ const App: React.FC = () => {
             </button>
           </header>
           
-          {/* ✅ --- INÍCIO DA CORREÇÃO --- */}
-          {/* O código aqui está completo, sem abreviações '...' */}
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
             {isLoading ? (
               <LoadingSpinner message="Conectando ao servidor... Isso pode demorar até 1 minuto. Obrigado pela sua paciência!" />
@@ -149,8 +165,6 @@ const App: React.FC = () => {
               renderView()
             )}
           </main>
-          {/* ✅ --- FIM DA CORREÇÃO --- */}
-
         </div>
       </div>
       

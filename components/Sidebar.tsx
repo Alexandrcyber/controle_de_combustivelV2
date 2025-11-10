@@ -1,4 +1,4 @@
-
+// components/Sidebar.tsx
 import React from 'react';
 import { DashboardIcon, TruckIcon, ExpensesIcon, FleetLogoIcon } from './icons';
 
@@ -9,6 +9,7 @@ interface SidebarProps {
   setCurrentView: (view: View) => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  clearFilters: () => void;
 }
 
 const NavItem: React.FC<{
@@ -40,9 +41,10 @@ const NavItem: React.FC<{
   );
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, isOpen, setIsOpen }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, isOpen, setIsOpen, clearFilters }) => {
   
   const handleViewChange = (view: View) => {
+    clearFilters(); 
     setCurrentView(view);
     setIsOpen(false);
   }
