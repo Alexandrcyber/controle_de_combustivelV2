@@ -103,7 +103,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
             <div className="bg-surface p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4">Desempenho Mensal</h2>
               <ResponsiveContainer width="100%" height={300}>
-                {/* ✅ CORREÇÃO: Desativa a animação no modo PDF */}
                 <BarChart data={monthlyData} isAnimationActive={!isPdfMode}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                   <XAxis dataKey="month" stroke="#94a3b8" />
@@ -118,7 +117,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
             <div className="bg-surface p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4">Custos Mensais (Combustível vs. Despesas)</h2>
               <ResponsiveContainer width="100%" height={300}>
-                {/* ✅ CORREÇÃO: Desativa a animação no modo PDF */}
                 <LineChart data={monthlyData} isAnimationActive={!isPdfMode}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                   <XAxis dataKey="month" stroke="#94a3b8" />
@@ -134,8 +132,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
             <div className="bg-surface p-6 rounded-lg shadow-lg col-span-1 lg:col-span-2">
                 <h2 className="text-xl font-semibold mb-4">Despesas por Fornecedor</h2>
                  <ResponsiveContainer width="100%" height={300}>
-                    {/* ✅ CORREÇÃO: Desativa a animação no modo PDF */}
-                    <PieChart isAnimationActive={!isPdfMode}>
+                    <PieChart>
+                        {/* ✅ CORREÇÃO APLICADA AQUI */}
                         <Pie
                             data={expenseByCategory}
                             cx="50%"
@@ -145,6 +143,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name"
+                            isAnimationActive={!isPdfMode} // Desativa a animação principal
+                            animationDuration={0} // Força a renderização imediata
                             label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         >
                             {expenseByCategory.map((entry, index) => (
