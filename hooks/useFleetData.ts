@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { TruckLog, Expense } from '../types';
 
 // In a real production app, this would be an environment variable
-const API_BASE_URL = 'http://localhost:3001/api'; 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 
 export const useFleetData = () => {
   const [isLoading, setIsLoading] = useState(true);
