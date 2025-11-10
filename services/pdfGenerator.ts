@@ -7,32 +7,23 @@ export const generateStyledPdf = async (
   fileName: string
 ): Promise<void> => {
   try {
-    // Dá ao React um momento para renderizar o conteúdo dentro do div de destino.
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // ✅ CORREÇÃO: Aumenta o delay para garantir a renderização completa dos SVGs dos gráficos.
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const targetElement = document.getElementById(elementId);
     if (!targetElement || targetElement.childElementCount === 0) {
       throw new Error(`Elemento com id "${elementId}" não foi encontrado ou está vazio.`);
     }
 
-    // Dimensões padrão do A4 em pixels (px) a 96 DPI.
-    const A4_WIDTH_PX = 794;
-    const A4_HEIGHT_PX = 1123;
-    
-    // ✅ --- MUDANÇA PRINCIPAL: Renderiza o elemento original, sem clonagem ---
     const canvas = await html2canvas(targetElement, {
       scale: 2,
       useCORS: true,
       logging: false,
-      // Garante um fundo consistente, mesmo que o elemento não tenha um.
-      backgroundColor: '#0f172a', 
-      // Força o html2canvas a usar a largura total do conteúdo, que já está dentro de um container
-      // com a largura correta no App.tsx (indiretamente).
+      backgroundColor: '#0f172a',
       windowWidth: targetElement.scrollWidth,
       windowHeight: targetElement.scrollHeight,
     });
 
-    // Se o canvas gerado tiver altura 0, significa que a renderização falhou.
     if (canvas.height === 0) {
       throw new Error("A renderização do conteúdo para o PDF falhou, resultando em uma imagem vazia.");
     }
@@ -40,7 +31,7 @@ export const generateStyledPdf = async (
     const pdf = new jsPDF({
       orientation: 'p',
       unit: 'px',
-      format: 'a4', // Usar o formato 'a4' é mais padronizado
+      format: 'a4',
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();

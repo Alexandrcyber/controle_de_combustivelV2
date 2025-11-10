@@ -12,7 +12,7 @@ interface DashboardProps {
   isPdfMode?: boolean;
 }
 
-const COLORS = ['#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc'];
+const COLORS = ['#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#a5f3fc'];
 
 const formatCurrency = (value: number) => 
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -103,14 +103,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
             <div className="bg-surface p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4">Desempenho Mensal</h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
+                {/* ✅ CORREÇÃO: Desativa a animação no modo PDF */}
+                <BarChart data={monthlyData} isAnimationActive={!isPdfMode}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                   <XAxis dataKey="month" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} 
-                    labelStyle={{ color: '#f8fafc' }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} labelStyle={{ color: '#f8fafc' }} />
                   <Legend wrapperStyle={{color: '#f8fafc'}}/>
                   <Bar dataKey="km" fill="#0284c7" name="KM Rodados" />
                 </BarChart>
@@ -120,14 +118,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
             <div className="bg-surface p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4">Custos Mensais (Combustível vs. Despesas)</h2>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyData}>
+                {/* ✅ CORREÇÃO: Desativa a animação no modo PDF */}
+                <LineChart data={monthlyData} isAnimationActive={!isPdfMode}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
                   <XAxis dataKey="month" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                    labelStyle={{ color: '#f8fafc' }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} labelStyle={{ color: '#f8fafc' }} />
                   <Legend wrapperStyle={{color: '#f8fafc'}}/>
                   <Line type="monotone" dataKey="fuel" stroke="#38bdf8" name="Combustível (R$)" strokeWidth={2} />
                   <Line type="monotone" dataKey="expense" stroke="#f43f5e" name="Despesas (R$)" strokeWidth={2} />
@@ -138,7 +134,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
             <div className="bg-surface p-6 rounded-lg shadow-lg col-span-1 lg:col-span-2">
                 <h2 className="text-xl font-semibold mb-4">Despesas por Fornecedor</h2>
                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
+                    {/* ✅ CORREÇÃO: Desativa a animação no modo PDF */}
+                    <PieChart isAnimationActive={!isPdfMode}>
                         <Pie
                             data={expenseByCategory}
                             cx="50%"
@@ -154,9 +151,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        <Tooltip 
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                        />
+                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
                         <Legend wrapperStyle={{color: '#f8fafc'}}/>
                     </PieChart>
                  </ResponsiveContainer>
