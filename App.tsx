@@ -93,7 +93,7 @@ const App: React.FC = () => {
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
             {/* --- INÍCIO DA CORREÇÃO DE LOADING E ERRO --- */}
             {isLoading ? (
-              <LoadingSpinner message="Nosso servidor gratuito pode demorar até 1 minuto para iniciar. Agradecemos a sua paciência!" />
+              <LoadingSpinner message="Conectando ao servidor... Isso pode demorar até 1 minuto. Obrigado pela sua paciência!" />
              ) : error ? (
               <div className="flex items-center justify-center h-full">
                 <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 max-w-lg text-center">
