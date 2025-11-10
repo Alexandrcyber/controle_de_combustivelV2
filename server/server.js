@@ -1,5 +1,5 @@
-// server.js
-const express = require('express');
+// server/server.js
+const express = require('express' );
 const cors = require('cors');
 require('dotenv').config();
 
@@ -9,11 +9,15 @@ const apiRoutes = require('./routes/api');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuração de CORS
+// ✅ --- CORREÇÃO APLICADA AQUI ---
 const corsOptions = {
   origin: 'https://gestao-unidade-sc.netlify.app',
+  // Adiciona os métodos PUT e DELETE à lista de permissões
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
   optionsSuccessStatus: 200
 };
+// ✅ --- FIM DA CORREÇÃO ---
+
 app.use(cors(corsOptions ));
 app.use(express.json());
 
@@ -29,9 +33,6 @@ const connectAndSyncDb = async () => {
     
     await db.sequelize.sync({ alter: true });
     console.log('✅ All models were synchronized successfully.');
-
-    // ✅ MUDANÇA: Bloco de 'seeding' (dados fixos) foi removido.
-    // O servidor não irá mais inserir dados automaticamente.
 
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}` );
