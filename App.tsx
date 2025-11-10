@@ -1,5 +1,5 @@
 // App.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { FleetData } from './components/FleetData';
@@ -8,7 +8,8 @@ import { DownloadIcon } from './components/icons';
 import { useFleetData } from './hooks/useFleetData';
 import { Alert } from './components/Alert';
 import { generateStyledPdf } from './services/pdfGenerator';
-import { LoadingSpinner } from './components/LoadingSpinner'; // ✅ Importa o componente de loading
+import { LoadingSpinner } from './components/LoadingSpinner';
+import { TruckLog, Expense } from './types';
 
 type View = 'dashboard' | 'truck-logs' | 'expenses';
 type AlertState = { message: string; type: 'success' | 'error' } | null;
@@ -18,6 +19,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [alert, setAlert] = useState<AlertState>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { 
     truckLogs, 
@@ -30,33 +32,66 @@ const App: React.FC = () => {
     error
   } = useFleetData();
 
+  const filteredTruckLogs = useMemo(() => {
+    if (!searchTerm) return truckLogs;
+    return truckLogs.filter(log => 
+      Object.values(log).some(val => 
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [truckLogs, searchTerm]);
+
+  const filteredExpenses = useMemo(() => {
+    if (!searchTerm) return expenses;
+    return expenses.filter(exp => 
+      Object.values(exp).some(val => 
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [expenses, searchTerm]);
+
   const handlePdfDownload = useCallback(async () => {
     if (isGeneratingPdf) return;
-
     setIsGeneratingPdf(true);
-    setAlert({ message: 'Gerando seu relatório, por favor aguarde...', type: 'success' });
-
+    setAlert({ message: 'Gerando seu relatório...', type: 'success' });
     await new Promise(resolve => setTimeout(resolve, 100));
-
     try {
       await generateStyledPdf('pdf-render-target', 'Relatorio_Frota');
       setAlert({ message: 'Relatório PDF gerado com sucesso!', type: 'success' });
     } catch (err) {
-      console.error(err);
       setAlert({ message: 'Ocorreu um erro ao gerar o PDF.', type: 'error' });
     } finally {
       setIsGeneratingPdf(false);
     }
-  }, [isGeneratingPdf, truckLogs, expenses]);
+  }, [isGeneratingPdf, filteredTruckLogs, filteredExpenses]);
 
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
+        // O dashboard principal sempre mostra todos os dados, não os filtrados
         return <Dashboard truckLogs={truckLogs} expenses={expenses} />;
       case 'truck-logs':
-        return <FleetData type="truck" data={truckLogs} onAdd={addTruckLog} onDelete={deleteTruckLog} />;
+        return (
+          <FleetData
+            type="truck"
+            data={truckLogs}
+            filteredData={filteredTruckLogs}
+            onAdd={addTruckLog}
+            onDelete={deleteTruckLog}
+            onSearch={setSearchTerm}
+          />
+        );
       case 'expenses':
-        return <FleetData type="expense" data={expenses} onAdd={addExpense} onDelete={deleteExpense} />;
+        return (
+          <FleetData
+            type="expense"
+            data={expenses}
+            filteredData={filteredExpenses}
+            onAdd={addExpense}
+            onDelete={deleteExpense}
+            onSearch={setSearchTerm}
+          />
+        );
       default:
         return <Dashboard truckLogs={truckLogs} expenses={expenses} />;
     }
@@ -83,22 +118,24 @@ const App: React.FC = () => {
             
             <button 
               onClick={handlePdfDownload}
-              disabled={isGeneratingPdf || isLoading} // Desabilita o botão também durante o loading inicial
+              disabled={isGeneratingPdf || isLoading}
               className="flex items-center gap-2 bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
             >
               <DownloadIcon />
               Baixar Relatório PDF
             </button>
           </header>
+          
+          {/* ✅ --- INÍCIO DA CORREÇÃO --- */}
+          {/* O código aqui está completo, sem abreviações '...' */}
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
-            {/* --- INÍCIO DA CORREÇÃO DE LOADING E ERRO --- */}
             {isLoading ? (
               <LoadingSpinner message="Conectando ao servidor... Isso pode demorar até 1 minuto. Obrigado pela sua paciência!" />
              ) : error ? (
               <div className="flex items-center justify-center h-full">
                 <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 max-w-lg text-center">
                   <h3 className="text-red-400 font-semibold text-xl mb-3">Falha ao Carregar Dados</h3>
-                  <p className="text-text-primary mb-2">Não foi possível conectar ao servidor. Isso pode ser devido a um erro de rede ou à configuração do servidor (CORS).</p>
+                  <p className="text-text-primary mb-2">Não foi possível conectar ao servidor. Isso pode ser devido a um erro de rede ou à configuração do servidor.</p>
                   <p className="text-slate-400 text-sm">Erro: {error}</p>
                   <button
                     onClick={() => window.location.reload()}
@@ -111,15 +148,16 @@ const App: React.FC = () => {
             ) : (
               renderView()
             )}
-            {/* --- FIM DA CORREÇÃO DE LOADING E ERRO --- */}
           </main>
+          {/* ✅ --- FIM DA CORREÇÃO --- */}
+
         </div>
       </div>
       
       <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
         {isGeneratingPdf && (
           <div id="pdf-render-target">
-            <ReportView truckLogs={truckLogs} expenses={expenses} />
+            <ReportView truckLogs={filteredTruckLogs} expenses={filteredExpenses} />
           </div>
         )}
       </div>

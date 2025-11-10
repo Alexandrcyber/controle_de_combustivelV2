@@ -1,3 +1,4 @@
+// server/models/TruckLog.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
@@ -13,7 +14,8 @@ const TruckLog = sequelize.define('TruckLog', {
   initialKm: { type: DataTypes.FLOAT, allowNull: false },
   finalKm: { type: DataTypes.FLOAT, allowNull: false },
   fuelPricePerLiter: { type: DataTypes.FLOAT, allowNull: false },
-  totalFuelCost: { type: DataTypes.FLOAT, allowNull: false },
+  // ✅ MUDANÇA: Campo alterado para armazenar litros.
+  litersFueled: { type: DataTypes.FLOAT, allowNull: false },
   idealKmLRoute: { type: DataTypes.FLOAT, allowNull: false },
   route: { type: DataTypes.STRING, allowNull: false },
   gasStation: { type: DataTypes.STRING, allowNull: false },

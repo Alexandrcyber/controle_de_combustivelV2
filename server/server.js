@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// ✅ Importa o objeto 'db' centralizado que contém a instância do sequelize e os modelos
 const db = require('./models'); 
 const apiRoutes = require('./routes/api');
 
@@ -28,13 +27,11 @@ const connectAndSyncDb = async () => {
     await db.sequelize.authenticate();
     console.log('✅ Database connection has been established successfully.');
     
-    // ✅ Sincroniza todos os modelos definidos no objeto 'db'
-    await db.sequelize.sync({ alter: true }); // 'alter: true' é mais seguro em produção que 'force: true'
+    await db.sequelize.sync({ alter: true });
     console.log('✅ All models were synchronized successfully.');
 
-    // Opcional: Seeding (seu código para popular o banco de dados)
-    const logCount = await db.TruckLog.count();
-    const expenseCount = await db.Expense.count();
+    // ✅ MUDANÇA: Bloco de 'seeding' (dados fixos) foi removido.
+    // O servidor não irá mais inserir dados automaticamente.
 
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}` );

@@ -1,3 +1,4 @@
+// types.ts
 
 export interface TruckLog {
   id: string;
@@ -7,16 +8,10 @@ export interface TruckLog {
   initialKm: number;
   finalKm: number;
   fuelPricePerLiter: number;
-  totalFuelCost: number;
+  litersFueled: number; // ✅ MUDANÇA: De 'totalFuelCost' para 'litersFueled'
   idealKmLRoute: number;
   route: string;
   gasStation: string;
-  date: string;
-  driver: string;
-  truck: string;
-  start_km: number;
-  end_km: number;
-  fuel_consumed: number;
 }
 
 export interface Expense {
@@ -25,8 +20,4 @@ export interface Expense {
   supplier: string;
   description: string;
   cost: number;
-  date: string;
-  driver: string;
-  truck: string;
-  value: number;
 }
