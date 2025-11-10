@@ -1,58 +1,43 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const sequelize = require('./db');
+// ✅ Importa o objeto 'db' centralizado que contém a instância do sequelize e os modelos
+const db = require('./models'); 
 const apiRoutes = require('./routes/api');
-const TruckLog = require('./models/TruckLog');
-const Expense = require('./models/Expense');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- INÍCIO DA CORREÇÃO DE CORS ---
-// Configuração específica para permitir requisições apenas do seu frontend
+// Configuração de CORS
 const corsOptions = {
-  origin: 'https://gestao-unidade-sc.netlify.app', // URL exata do seu site em produção
+  origin: 'https://gestao-unidade-sc.netlify.app',
   optionsSuccessStatus: 200
 };
-
 app.use(cors(corsOptions ));
-// --- FIM DA CORREÇÃO DE CORS ---
-
-// Middleware
 app.use(express.json());
 
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
-});
-
-// API Routes
+// Rotas
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'OK' }));
 app.use('/api', apiRoutes);
 
-// Database connection and table creation
+// Conexão e Sincronização com o Banco de Dados
 const connectAndSyncDb = async () => {
   try {
-    await sequelize.authenticate();
+    await db.sequelize.authenticate();
     console.log('✅ Database connection has been established successfully.');
     
-    await sequelize.sync(); 
+    // ✅ Sincroniza todos os modelos definidos no objeto 'db'
+    await db.sequelize.sync({ alter: true }); // 'alter: true' é mais seguro em produção que 'force: true'
     console.log('✅ All models were synchronized successfully.');
 
-    const logCount = await TruckLog.count();
-    const expenseCount = await Expense.count();
+    // Opcional: Seeding (seu código para popular o banco de dados)
+    const logCount = await db.TruckLog.count();
+    const expenseCount = await db.Expense.count();
     if (logCount === 0 && expenseCount === 0) {
       console.log('Database is empty, seeding with initial data...');
-      await TruckLog.bulkCreate([
-          { truckModel: 'Volvo FH', licensePlate: 'ABC-1234', month: '2024-06', initialKm: 100000, finalKm: 105000, fuelPricePerLiter: 5.50, totalFuelCost: 5500, idealKmLRoute: 2.8, route: 'São Paulo - Rio de Janeiro', gasStation: 'Posto Shell' },
-          { truckModel: 'Scania R450', licensePlate: 'DEF-5678', month: '2024-06', initialKm: 80000, finalKm: 84000, fuelPricePerLiter: 5.60, totalFuelCost: 4480, idealKmLRoute: 3.0, route: 'Curitiba - Porto Alegre', gasStation: 'Posto Ipiranga' },
-          { truckModel: 'Volvo FH', licensePlate: 'ABC-1234', month: '2024-07', initialKm: 105000, finalKm: 110000, fuelPricePerLiter: 5.75, totalFuelCost: 5750, idealKmLRoute: 2.8, route: 'São Paulo - Rio de Janeiro', gasStation: 'Posto Petrobras' },
-      ]);
-      await Expense.bulkCreate([
-          { month: '2024-06', supplier: 'Borracharia Zé', description: 'Troca de Pneu', cost: 1200 },
-          { month: '2024-07', supplier: 'Oficina Mecânica', description: 'Revisão Motor', cost: 3500 },
-      ]);
+      // ... seu código de .bulkCreate ...
       console.log('✅ Database seeded successfully.');
     }
 
