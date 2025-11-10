@@ -1,6 +1,13 @@
+# Configurações de Build para o Netlify
+
 [build]
+  # Comando para construir o projeto. 'npm run build' executa o script 'build' do seu package.json, que geralmente é 'vite build'.
   command = "npm run build"
+  
+  # Diretório onde o resultado do build será colocado. Para projetos Vite, é sempre 'dist'.
   publish = "dist"
 
 [context.production.environment]
-  VITE_API_URL = "https://controle-combustivel-api.onrender.com/api"
+  # Esta seção é uma redundância segura, mas garante que a variável de ambiente
+  # seja reconhecida no contexto de produção.
+  VITE_API_URL = "https://controle-de-combustivelv2.onrender.com"
