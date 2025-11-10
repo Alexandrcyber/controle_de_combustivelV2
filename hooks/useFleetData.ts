@@ -2,15 +2,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TruckLog, Expense } from '../types';
 
-// ✅ --- INÍCIO DA CORREÇÃO ---
-// Lê a URL base da API a partir das variáveis de ambiente do Vite.
-// O Vite substitui 'import.meta.env.VITE_API_URL' pelo valor que você configurou no Netlify.
 const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
-// ✅ --- FIM DA CORREÇÃO ---
 
-// Validação: Garante que a variável de ambiente foi carregada.
 if (!import.meta.env.VITE_API_URL) {
-  throw new Error("A variável de ambiente VITE_API_URL não está definida. Verifique seu arquivo .env ou as configurações do Netlify.");
+  throw new Error("A variável de ambiente VITE_API_URL não está definida.");
 }
 
 export const useFleetData = () => {
@@ -20,21 +15,15 @@ export const useFleetData = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    // Não precisa mudar o estado de loading aqui se já for feito no início
     try {
-      // As requisições agora usarão a URL correta vinda do Netlify
       const [truckLogsResponse, expensesResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/truck-logs`),
         fetch(`${API_BASE_URL}/expenses`)
       ]);
 
-      if (!truckLogsResponse.ok) {
-        throw new Error(`Falha ao buscar registros de viagem: ${truckLogsResponse.statusText}`);
-      }
-      if (!expensesResponse.ok) {
-        throw new Error(`Falha ao buscar despesas: ${expensesResponse.statusText}`);
-      }
+      if (!truckLogsResponse.ok) throw new Error(`Falha ao buscar registros: ${truckLogsResponse.statusText}`);
+      if (!expensesResponse.ok) throw new Error(`Falha ao buscar despesas: ${expensesResponse.statusText}`);
 
       const truckLogsData = await truckLogsResponse.json();
       const expensesData = await expensesResponse.json();
@@ -44,7 +33,7 @@ export const useFleetData = () => {
 
     } catch (err: any) {
       console.error("Error fetching data:", err);
-      setError(err.message || 'Ocorreu um erro desconhecido ao buscar os dados.');
+      setError(err.message || 'Ocorreu um erro desconhecido.');
     } finally {
       setIsLoading(false);
     }
@@ -54,27 +43,61 @@ export const useFleetData = () => {
     fetchData();
   }, [fetchData]);
 
-  // As funções de adicionar/deletar não precisam de mudança,
-  // pois elas já dependem da `fetchData` ou usarão a `API_BASE_URL` que agora está correta.
+  // ✅ --- INÍCIO DA CORREÇÃO ---
+
   const addTruckLog = async (log: Omit<TruckLog, 'id'>) => {
-    // ... sua lógica
-    await fetchData();
+    try {
+      const response = await fetch(`${API_BASE_URL}/truck-logs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(log),
+      });
+      if (!response.ok) throw new Error('Falha ao adicionar registro de frota.');
+      await fetchData(); // Recarrega os dados para mostrar o novo item
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const addExpense = async (expense: Omit<Expense, 'id'>) => {
-    // ... sua lógica
-    await fetchData();
+    try {
+      const response = await fetch(`${API_BASE_URL}/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expense),
+      });
+      if (!response.ok) throw new Error('Falha ao adicionar despesa.');
+      await fetchData(); // Recarrega os dados
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const deleteTruckLog = async (id: string) => {
-    // ... sua lógica
-    await fetchData();
+    try {
+      const response = await fetch(`${API_BASE_URL}/truck-logs/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Falha ao deletar registro de frota.');
+      await fetchData(); // Recarrega os dados para remover o item da UI
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
   
   const deleteExpense = async (id: string) => {
-    // ... sua lógica
-    await fetchData();
+    try {
+      const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Falha ao deletar despesa.');
+      await fetchData(); // Recarrega os dados
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
+
+  // ✅ --- FIM DA CORREÇÃO ---
 
   return { 
     truckLogs, 

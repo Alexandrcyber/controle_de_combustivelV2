@@ -35,11 +35,6 @@ const connectAndSyncDb = async () => {
     // Opcional: Seeding (seu código para popular o banco de dados)
     const logCount = await db.TruckLog.count();
     const expenseCount = await db.Expense.count();
-    if (logCount === 0 && expenseCount === 0) {
-      console.log('Database is empty, seeding with initial data...');
-      // ... seu código de .bulkCreate ...
-      console.log('✅ Database seeded successfully.');
-    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}` );
