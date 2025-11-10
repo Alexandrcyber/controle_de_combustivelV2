@@ -7,62 +7,60 @@ export const generateStyledPdf = async (
   fileName: string
 ): Promise<void> => {
   try {
-    // ✅ MUDANÇA: Pequeno delay para garantir que o React renderizou o elemento.
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Dá ao React um momento para renderizar o conteúdo dentro do div de destino.
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    const sourceElement = document.getElementById(elementId);
-    if (!sourceElement) {
-      throw new Error(`Elemento com id "${elementId}" não encontrado.`);
+    const targetElement = document.getElementById(elementId);
+    if (!targetElement || targetElement.childElementCount === 0) {
+      throw new Error(`Elemento com id "${elementId}" não foi encontrado ou está vazio.`);
     }
 
+    // Dimensões padrão do A4 em pixels (px) a 96 DPI.
     const A4_WIDTH_PX = 794;
     const A4_HEIGHT_PX = 1123;
     
-    const pdfContainer = document.createElement('div');
-    pdfContainer.style.width = `${A4_WIDTH_PX}px`;
-    pdfContainer.style.position = 'absolute';
-    pdfContainer.style.top = '-9999px';
-    pdfContainer.style.left = '0px';
-
-    const contentClone = sourceElement.cloneNode(true) as HTMLElement;
-    pdfContainer.appendChild(contentClone);
-    document.body.appendChild(pdfContainer);
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const canvas = await html2canvas(pdfContainer, {
+    // ✅ --- MUDANÇA PRINCIPAL: Renderiza o elemento original, sem clonagem ---
+    const canvas = await html2canvas(targetElement, {
       scale: 2,
       useCORS: true,
       logging: false,
-      backgroundColor: null,
-      width: A4_WIDTH_PX,
-      windowWidth: A4_WIDTH_PX,
+      // Garante um fundo consistente, mesmo que o elemento não tenha um.
+      backgroundColor: '#0f172a', 
+      // Força o html2canvas a usar a largura total do conteúdo, que já está dentro de um container
+      // com a largura correta no App.tsx (indiretamente).
+      windowWidth: targetElement.scrollWidth,
+      windowHeight: targetElement.scrollHeight,
     });
 
-    document.body.removeChild(pdfContainer);
+    // Se o canvas gerado tiver altura 0, significa que a renderização falhou.
+    if (canvas.height === 0) {
+      throw new Error("A renderização do conteúdo para o PDF falhou, resultando em uma imagem vazia.");
+    }
 
     const pdf = new jsPDF({
       orientation: 'p',
       unit: 'px',
-      format: [A4_WIDTH_PX, A4_HEIGHT_PX],
-      hotfixes: ['px_scaling'],
+      format: 'a4', // Usar o formato 'a4' é mais padronizado
     });
 
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
     const imgData = canvas.toDataURL('image/png');
     const canvasAspectRatio = canvas.height / canvas.width;
-    const imgHeight = A4_WIDTH_PX * canvasAspectRatio;
+    const imgHeight = pdfWidth * canvasAspectRatio;
 
     let heightLeft = imgHeight;
     let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH_PX, imgHeight);
-    heightLeft -= A4_HEIGHT_PX;
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
 
     while (heightLeft > 0) {
-      position -= A4_HEIGHT_PX;
+      position -= pdfHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, A4_WIDTH_PX, imgHeight);
-      heightLeft -= A4_HEIGHT_PX;
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
     }
 
     const date = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
