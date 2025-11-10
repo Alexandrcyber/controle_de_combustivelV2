@@ -123,8 +123,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
                   <YAxis stroke="#94a3b8" />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} labelStyle={{ color: '#f8fafc' }} />
                   <Legend wrapperStyle={{color: '#f8fafc'}}/>
-                  <Line type="monotone" dataKey="fuel" stroke="#38bdf8" name="Combustível (R$)" strokeWidth={2} />
-                  <Line type="monotone" dataKey="expense" stroke="#f43f5e" name="Despesas (R$)" strokeWidth={2} />
+                  {/* ✅ CORREÇÃO APLICADA AQUI */}
+                  <Line type={isPdfMode ? 'linear' : 'monotone'} dataKey="fuel" stroke="#38bdf8" name="Combustível (R$)" strokeWidth={2} />
+                  <Line type={isPdfMode ? 'linear' : 'monotone'} dataKey="expense" stroke="#f43f5e" name="Despesas (R$)" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -133,7 +134,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
                 <h2 className="text-xl font-semibold mb-4">Despesas por Fornecedor</h2>
                  <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                        {/* ✅ CORREÇÃO APLICADA AQUI */}
                         <Pie
                             data={expenseByCategory}
                             cx="50%"
@@ -143,8 +143,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ truckLogs, expenses, isPdf
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name"
-                            isAnimationActive={!isPdfMode} // Desativa a animação principal
-                            animationDuration={0} // Força a renderização imediata
+                            isAnimationActive={!isPdfMode}
+                            animationDuration={0}
                             label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         >
                             {expenseByCategory.map((entry, index) => (
