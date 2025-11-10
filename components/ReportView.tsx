@@ -10,7 +10,6 @@ interface ReportViewProps {
   expenses: Expense[];
 }
 
-// ✅ O cabeçalho não precisa de mudanças, ele já é fluido.
 const ReportHeader: React.FC = () => {
   const reportDate = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -37,18 +36,21 @@ const ReportHeader: React.FC = () => {
   );
 };
 
+// ✅ MUDANÇA: O componente agora recebe e usa as props
 export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) => {
+  // Adiciona uma verificação para evitar o crash se as props ainda forem undefined
+  if (!truckLogs || !expenses) {
+    return <div>Preparando dados para o relatório...</div>;
+  }
+
   return (
-    // ✅ MUDANÇA PRINCIPAL: Removido o container com largura fixa.
-    // O componente agora se adapta a qualquer container pai.
     <div className="bg-slate-900 text-slate-200 font-sans">
       <div className="bg-slate-800/50 rounded-lg shadow-lg border border-slate-700">
-        {/* O cabeçalho foi movido para fora da seção principal para um visual mais limpo */}
         <ReportHeader />
 
         <main className="p-6">
           <section className="mb-8">
-            {/* O Dashboard já usa grid e é responsivo, então se adaptará bem. */}
+            {/* ✅ MUDANÇA: Repassa as props para o Dashboard */}
             <Dashboard truckLogs={truckLogs} expenses={expenses} isPdfMode={true} />
           </section>
 
@@ -56,12 +58,15 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
             <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-primary pl-3">
               Detalhes das Viagens
             </h2>
+            {/* ✅ MUDANÇA: Repassa as props para o FleetData */}
             <FleetData 
               type="truck" 
-              data={truckLogs} 
+              data={truckLogs}
+              filteredData={truckLogs} // No PDF, data e filteredData são os mesmos
               isPdfMode={true}
               onAdd={() => {}}
               onDelete={() => {}}
+              onSearch={() => {}}
             />
           </section>
 
@@ -69,12 +74,15 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
             <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-primary pl-3">
               Detalhes das Despesas
             </h2>
+            {/* ✅ MUDANÇA: Repassa as props para o FleetData */}
             <FleetData 
               type="expense" 
-              data={expenses} 
+              data={expenses}
+              filteredData={expenses} // No PDF, data e filteredData são os mesmos
               isPdfMode={true}
               onAdd={() => {}}
               onDelete={() => {}}
+              onSearch={() => {}}
             />
           </section>
         </main>

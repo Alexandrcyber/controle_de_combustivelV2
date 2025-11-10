@@ -67,12 +67,14 @@ const App: React.FC = () => {
     if (isGeneratingPdf) return;
     setIsGeneratingPdf(true);
     setAlert({ message: 'Gerando seu relatório...', type: 'success' });
-    await new Promise(resolve => setTimeout(resolve, 100));
+    
     try {
+      // A função agora tem tempo de encontrar o elemento
       await generateStyledPdf('pdf-render-target', 'Relatorio_Frota');
       setAlert({ message: 'Relatório PDF gerado com sucesso!', type: 'success' });
-    } catch (err) {
-      setAlert({ message: 'Ocorreu um erro ao gerar o PDF.', type: 'error' });
+    } catch (err: any) {
+      console.error(err); // Loga o erro para depuração
+      setAlert({ message: err.message || 'Ocorreu um erro ao gerar o PDF.', type: 'error' });
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -147,7 +149,7 @@ const App: React.FC = () => {
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
             {isLoading ? (
               <LoadingSpinner message="Conectando ao servidor... Isso pode demorar até 1 minuto. Obrigado pela sua paciência!" />
-             ) : error ? (
+              ) : error ? (
               <div className="flex items-center justify-center h-full">
                 <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 max-w-lg text-center">
                   <h3 className="text-red-400 font-semibold text-xl mb-3">Falha ao Carregar Dados</h3>
@@ -168,11 +170,10 @@ const App: React.FC = () => {
         </div>
       </div>
       
-      <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
+      {/* ✅ MUDANÇA: O container agora está sempre no DOM, mas seu conteúdo é condicional. */}
+      <div id="pdf-render-target" style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
         {isGeneratingPdf && (
-          <div id="pdf-render-target">
-            <ReportView truckLogs={filteredTruckLogs} expenses={filteredExpenses} />
-          </div>
+          <ReportView truckLogs={filteredTruckLogs} expenses={filteredExpenses} />
         )}
       </div>
     </>
