@@ -1,15 +1,15 @@
 // components/FleetData.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TruckLog, Expense } from '../types';
-import { DeleteIcon, PlusIcon } from './icons';
+import { DeleteIcon, PlusIcon, EditIcon } from './icons';
 
 type FleetDataType = 'truck' | 'expense';
 
 interface FleetDataProps<T extends TruckLog | Expense> {
   type: FleetDataType;
-  data: T[];
   filteredData: T[];
   onAdd: (item: Omit<T, 'id'>) => void;
+  onUpdate: (id: string, item: Partial<Omit<T, 'id'>>) => void;
   onDelete: (id: string) => void;
   onSearch: (term: string) => void;
   isPdfMode?: boolean;
@@ -25,18 +25,41 @@ const initialExpenseFormState = {
   month: new Date().toISOString().slice(0, 7), supplier: '', description: '', cost: '',
 };
 
-const TruckLogForm: React.FC<{onAdd: (log: Omit<TruckLog, 'id'>) => void; close: () => void}> = ({ onAdd, close }) => {
+const TruckLogForm: React.FC<{
+  onAdd: (log: Omit<TruckLog, 'id'>) => void;
+  onUpdate: (id: string, log: Partial<Omit<TruckLog, 'id'>>) => void;
+  editingItem: TruckLog | null;
+  close: () => void;
+}> = ({ onAdd, onUpdate, editingItem, close }) => {
     const [formState, setFormState] = useState(initialTruckLogFormState);
-    
+
+    useEffect(() => {
+      if (editingItem) {
+        setFormState({
+          truckModel: editingItem.truckModel,
+          licensePlate: editingItem.licensePlate,
+          month: editingItem.month,
+          initialKm: String(editingItem.initialKm),
+          finalKm: String(editingItem.finalKm),
+          fuelPricePerLiter: String(editingItem.fuelPricePerLiter),
+          litersFueled: String(editingItem.litersFueled),
+          idealKmLRoute: String(editingItem.idealKmLRoute),
+          route: editingItem.route,
+          gasStation: editingItem.gasStation,
+        });
+      } else {
+        setFormState(initialTruckLogFormState);
+      }
+    }, [editingItem]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // ✅ --- CORREÇÃO APLICADA AQUI ---
         const { name, value } = e.target;
         setFormState(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const newLog: Omit<TruckLog, 'id'> = {
+        const formData = {
             ...formState,
             initialKm: parseFloat(formState.initialKm) || 0,
             finalKm: parseFloat(formState.finalKm) || 0,
@@ -44,8 +67,11 @@ const TruckLogForm: React.FC<{onAdd: (log: Omit<TruckLog, 'id'>) => void; close:
             litersFueled: parseFloat(formState.litersFueled) || 0,
             idealKmLRoute: parseFloat(formState.idealKmLRoute) || 0,
         };
-        console.log("Enviando novo registro de frota:", newLog); // Log para depuração
-        onAdd(newLog);
+        if (editingItem) {
+          onUpdate(editingItem.id, formData);
+        } else {
+          onAdd(formData);
+        }
         close();
     };
 
@@ -63,29 +89,49 @@ const TruckLogForm: React.FC<{onAdd: (log: Omit<TruckLog, 'id'>) => void; close:
             <input name="gasStation" value={formState.gasStation} onChange={handleChange} placeholder="Posto" required className="bg-slate-700 p-2 rounded" />
             <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-2">
                 <button type="button" onClick={close} className="bg-secondary text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-500">Cancelar</button>
-                <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Adicionar</button>
+                <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">{editingItem ? 'Salvar Alterações' : 'Adicionar'}</button>
             </div>
         </form>
     );
 };
 
-const ExpenseForm: React.FC<{onAdd: (exp: Omit<Expense, 'id'>) => void; close: () => void}> = ({ onAdd, close }) => {
+const ExpenseForm: React.FC<{
+  onAdd: (exp: Omit<Expense, 'id'>) => void;
+  onUpdate: (id: string, exp: Partial<Omit<Expense, 'id'>>) => void;
+  editingItem: Expense | null;
+  close: () => void;
+}> = ({ onAdd, onUpdate, editingItem, close }) => {
     const [formState, setFormState] = useState(initialExpenseFormState);
 
+    useEffect(() => {
+      if (editingItem) {
+        setFormState({
+          month: editingItem.month,
+          supplier: editingItem.supplier,
+          description: editingItem.description,
+          cost: String(editingItem.cost),
+        });
+      } else {
+        setFormState(initialExpenseFormState);
+      }
+    }, [editingItem]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // ✅ --- CORREÇÃO APLICADA AQUI TAMBÉM ---
         const { name, value } = e.target;
         setFormState(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const newExpense: Omit<Expense, 'id'> = {
+        const formData = {
             ...formState,
             cost: parseFloat(formState.cost) || 0
         };
-        console.log("Enviando nova despesa:", newExpense); // Log para depuração
-        onAdd(newExpense);
+        if (editingItem) {
+          onUpdate(editingItem.id, formData);
+        } else {
+          onAdd(formData);
+        }
         close();
     };
 
@@ -97,14 +143,15 @@ const ExpenseForm: React.FC<{onAdd: (exp: Omit<Expense, 'id'>) => void; close: (
             <input type="number" step="0.01" name="cost" value={formState.cost} onChange={handleChange} placeholder="Valor do Serviço R$" required className="bg-slate-700 p-2 rounded" />
             <div className="md:col-span-2 flex justify-end gap-2">
                  <button type="button" onClick={close} className="bg-secondary text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-500">Cancelar</button>
-                <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Adicionar</button>
+                <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">{editingItem ? 'Salvar Alterações' : 'Adicionar'}</button>
             </div>
         </form>
     );
 };
 
-export function FleetData<T extends TruckLog | Expense>({ type, filteredData, onAdd, onDelete, onSearch, isPdfMode = false }: FleetDataProps<T>) {
+export function FleetData<T extends TruckLog | Expense>({ type, filteredData, onAdd, onUpdate, onDelete, onSearch, isPdfMode = false }: FleetDataProps<T>) {
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<T | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const title = type === 'truck' ? 'Registros de Frota' : 'Controle de Despesas';
@@ -113,6 +160,21 @@ export function FleetData<T extends TruckLog | Expense>({ type, filteredData, on
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
         onSearch(e.target.value);
+    };
+
+    const handleEdit = (item: T) => {
+      setEditingItem(item);
+      setIsFormOpen(true);
+    };
+
+    const handleCloseForm = () => {
+      setIsFormOpen(false);
+      setEditingItem(null);
+    };
+
+    const handleOpenForm = () => {
+      setEditingItem(null); // Garante que está em modo de adição
+      setIsFormOpen(true);
     };
 
     const renderTable = () => {
@@ -143,7 +205,8 @@ export function FleetData<T extends TruckLog | Expense>({ type, filteredData, on
                                     <td className="p-3">{totalCost.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
                                     <td className="p-3 hidden lg:table-cell">{consumo.toFixed(2)} km/l</td>
                                     {!isPdfMode && (
-                                      <td className="p-3">
+                                      <td className="p-3 flex items-center gap-2">
+                                          <button onClick={() => handleEdit(log)} className="text-blue-400 hover:text-blue-300 p-1"><EditIcon /></button>
                                           <button onClick={() => onDelete(log.id)} className="text-red-500 hover:text-red-400 p-1"><DeleteIcon /></button>
                                       </td>
                                     )}
@@ -174,7 +237,8 @@ export function FleetData<T extends TruckLog | Expense>({ type, filteredData, on
                                 <td className="p-3 hidden sm:table-cell">{exp.description}</td>
                                 <td className="p-3">{exp.cost.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
                                 {!isPdfMode && (
-                                  <td className="p-3">
+                                  <td className="p-3 flex items-center gap-2">
+                                      <button onClick={() => handleEdit(exp)} className="text-blue-400 hover:text-blue-300 p-1"><EditIcon /></button>
                                       <button onClick={() => onDelete(exp.id)} className="text-red-500 hover:text-red-400 p-1"><DeleteIcon /></button>
                                   </td>
                                 )}
@@ -191,7 +255,7 @@ export function FleetData<T extends TruckLog | Expense>({ type, filteredData, on
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-3xl font-bold text-text-primary">{title}</h1>
                 {!isPdfMode && (
-                  <button onClick={() => setIsFormOpen(!isFormOpen)} className="flex items-center gap-2 bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors w-full sm:w-auto">
+                  <button onClick={isFormOpen ? handleCloseForm : handleOpenForm} className="flex items-center gap-2 bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors w-full sm:w-auto">
                       <PlusIcon /> {isFormOpen ? 'Fechar Formulário' : addButtonText}
                   </button>
                 )}
@@ -200,8 +264,8 @@ export function FleetData<T extends TruckLog | Expense>({ type, filteredData, on
             {isFormOpen && (
                 <div className="bg-surface p-6 rounded-lg shadow-lg">
                     {type === 'truck' ? 
-                        <TruckLogForm onAdd={onAdd as (log: Omit<TruckLog, 'id'>) => void} close={() => setIsFormOpen(false)} /> : 
-                        <ExpenseForm onAdd={onAdd as (exp: Omit<Expense, 'id'>) => void} close={() => setIsFormOpen(false)} />
+                        <TruckLogForm onAdd={onAdd as any} onUpdate={onUpdate as any} editingItem={editingItem as TruckLog | null} close={handleCloseForm} /> : 
+                        <ExpenseForm onAdd={onAdd as any} onUpdate={onUpdate as any} editingItem={editingItem as Expense | null} close={handleCloseForm} />
                     }
                 </div>
             )}

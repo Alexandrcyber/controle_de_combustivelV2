@@ -28,17 +28,28 @@ const App: React.FC = () => {
   const [alert, setAlert] = useState<AlertState>(null);
   const [filters, setFilters] = useState(initialFilterState);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   const { 
     truckLogs, 
     expenses, 
     addTruckLog, 
-    addExpense, 
+    updateTruckLog,
     deleteTruckLog, 
+    addExpense,
+    updateExpense,
     deleteExpense,
     isLoading,
     error
   } = useFleetData();
+
+  const { uniqueMonths, uniqueModels, uniquePlates, uniqueSuppliers } = useMemo(() => {
+    const uniqueMonths = [...new Set([...truckLogs.map(l => l.month), ...expenses.map(e => e.month)])].sort((a, b) => b.localeCompare(a));
+    const uniqueModels = [...new Set(truckLogs.map(l => l.truckModel))].sort();
+    const uniquePlates = [...new Set(truckLogs.map(l => l.licensePlate))].sort();
+    const uniqueSuppliers = [...new Set(expenses.map(e => e.supplier))].sort();
+    return { uniqueMonths, uniqueModels, uniquePlates, uniqueSuppliers };
+  }, [truckLogs, expenses]);
 
   const { filteredTruckLogs, filteredExpenses } = useMemo(() => {
     const baseFilteredLogs = truckLogs.filter(log => 
@@ -72,7 +83,6 @@ const App: React.FC = () => {
       await generateStyledPdf('pdf-render-target', 'Relatorio_Frota');
       setAlert({ message: 'Relatório PDF gerado com sucesso!', type: 'success' });
     } catch (err: any) {
-      console.error(err);
       setAlert({ message: err.message || 'Ocorreu um erro ao gerar o PDF.', type: 'error' });
     } finally {
       setIsGeneratingPdf(false);
@@ -84,6 +94,10 @@ const App: React.FC = () => {
     setSearchTerm('');
   };
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
@@ -92,9 +106,9 @@ const App: React.FC = () => {
         return (
           <FleetData
             type="truck"
-            data={truckLogs}
             filteredData={filteredTruckLogs}
             onAdd={addTruckLog}
+            onUpdate={updateTruckLog}
             onDelete={deleteTruckLog}
             onSearch={setSearchTerm}
           />
@@ -103,9 +117,9 @@ const App: React.FC = () => {
         return (
           <FleetData
             type="expense"
-            data={expenses}
             filteredData={filteredExpenses}
             onAdd={addExpense}
+            onUpdate={updateExpense}
             onDelete={deleteExpense}
             onSearch={setSearchTerm}
           />
@@ -128,13 +142,16 @@ const App: React.FC = () => {
           clearFilters={clearAllFilters}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="flex justify-between items-center p-4 bg-surface shadow-md lg:justify-end">
+          <header className="flex justify-between items-center p-4 bg-surface shadow-md">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 rounded-md hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            
+            <div className="flex-1"></div>
+            <button onClick={( ) => setShowFilters(!showFilters)} className="text-sm bg-secondary py-2 px-3 rounded-lg hover:bg-slate-500 transition-colors mr-4">
+              {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+            </button>
             <button 
               onClick={handlePdfDownload}
               disabled={isGeneratingPdf || isLoading}
@@ -146,13 +163,39 @@ const App: React.FC = () => {
           </header>
           
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+            {showFilters && (
+              <div className="bg-surface p-4 rounded-lg mb-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <select name="month" value={filters.month} onChange={handleFilterChange} className="bg-slate-700 p-2 rounded w-full">
+                    <option value="">Todo Mês</option>
+                    {uniqueMonths.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select name="truckModel" value={filters.truckModel} onChange={handleFilterChange} className="bg-slate-700 p-2 rounded w-full">
+                    <option value="">Todo Modelo</option>
+                    {uniqueModels.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select name="licensePlate" value={filters.licensePlate} onChange={handleFilterChange} className="bg-slate-700 p-2 rounded w-full">
+                    <option value="">Toda Placa</option>
+                    {uniquePlates.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <select name="supplier" value={filters.supplier} onChange={handleFilterChange} className="bg-slate-700 p-2 rounded w-full">
+                    <option value="">Todo Fornecedor</option>
+                    {uniqueSuppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <button onClick={clearAllFilters} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 transition-colors w-full">
+                    Limpar Filtros
+                  </button>
+                </div>
+              </div>
+            )}
+
             {isLoading ? (
               <LoadingSpinner message="Conectando ao servidor... Isso pode demorar até 1 minuto. Obrigado pela sua paciência!" />
-               ) : error ? (
+              ) : error ? (
               <div className="flex items-center justify-center h-full">
                 <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 max-w-lg text-center">
                   <h3 className="text-red-400 font-semibold text-xl mb-3">Falha ao Carregar Dados</h3>
-                  <p className="text-text-primary mb-2">Não foi possível conectar ao servidor. Isso pode ser devido a um erro de rede ou à configuração do servidor.</p>
+                  <p className="text-text-primary mb-2">Não foi possível conectar ao servidor.</p>
                   <p className="text-slate-400 text-sm">Erro: {error}</p>
                   <button
                     onClick={() => window.location.reload()}
@@ -171,8 +214,6 @@ const App: React.FC = () => {
       
       <div id="pdf-render-target" style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
         {isGeneratingPdf && (
-          // ✅ --- CORREÇÃO APLICADA AQUI ---
-          // Garante que o ReportView receba os dados JÁ FILTRADOS
           <ReportView truckLogs={filteredTruckLogs} expenses={filteredExpenses} />
         )}
       </div>

@@ -1,13 +1,9 @@
 // server/routes/api.js
 const express = require('express');
 const router = express.Router();
-
-// ✅ --- INÍCIO DA CORREÇÃO ---
-// Importa os modelos a partir do arquivo central 'index.js' da pasta models
 const { TruckLog, Expense } = require('../models');
-// ✅ --- FIM DA CORREÇÃO ---
 
-// Truck Log Routes
+// --- Truck Log Routes ---
 router.get('/truck-logs', async (req, res) => {
   try {
     const logs = await TruckLog.findAll({ order: [['createdAt', 'DESC']] });
@@ -22,27 +18,37 @@ router.post('/truck-logs', async (req, res) => {
     const newLog = await TruckLog.create(req.body);
     res.status(201).json(newLog);
   } catch (error) {
-    console.error('Erro ao criar TruckLog:', error); // Adiciona log de erro detalhado
     res.status(400).json({ error: error.message });
+  }
+});
+
+// ✅ NOVA ROTA PUT PARA ATUALIZAR
+router.put('/truck-logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [updated] = await TruckLog.update(req.body, { where: { id } });
+    if (updated) {
+      const updatedLog = await TruckLog.findOne({ where: { id } });
+      res.status(200).json(updatedLog);
+    } else {
+      res.status(404).json({ error: 'Log not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
 router.delete('/truck-logs/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await TruckLog.destroy({ where: { id } });
-    if (deleted) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ error: 'Log not found' });
-    }
+    await TruckLog.destroy({ where: { id } });
+    res.status(204).send();
   } catch (error) {
-    console.error('Erro ao deletar TruckLog:', error); // Adiciona log de erro detalhado
     res.status(500).json({ error: error.message });
   }
 });
 
-// Expense Routes
+// --- Expense Routes ---
 router.get('/expenses', async (req, res) => {
   try {
     const expenses = await Expense.findAll({ order: [['createdAt', 'DESC']] });
@@ -57,22 +63,32 @@ router.post('/expenses', async (req, res) => {
     const newExpense = await Expense.create(req.body);
     res.status(201).json(newExpense);
   } catch (error) {
-    console.error('Erro ao criar Expense:', error); // Adiciona log de erro detalhado
     res.status(400).json({ error: error.message });
+  }
+});
+
+// ✅ NOVA ROTA PUT PARA ATUALIZAR
+router.put('/expenses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [updated] = await Expense.update(req.body, { where: { id } });
+    if (updated) {
+      const updatedExpense = await Expense.findOne({ where: { id } });
+      res.status(200).json(updatedExpense);
+    } else {
+      res.status(404).json({ error: 'Expense not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
 router.delete('/expenses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await Expense.destroy({ where: { id } });
-    if (deleted) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ error: 'Expense not found' });
-    }
+    await Expense.destroy({ where: { id } });
+    res.status(204).send();
   } catch (error) {
-    console.error('Erro ao deletar Expense:', error); // Adiciona log de erro detalhado
     res.status(500).json({ error: error.message });
   }
 });

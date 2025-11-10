@@ -37,7 +37,6 @@ const ReportHeader: React.FC = () => {
 };
 
 export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) => {
-  // Verificação para garantir que os dados não são nulos, evitando crashes.
   if (!truckLogs || !expenses) {
     return <div>Carregando dados para o relatório...</div>;
   }
@@ -49,7 +48,6 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
 
         <main className="p-6">
           <section className="mb-8">
-            {/* O Dashboard agora recebe os dados filtrados e exibe os totais corretos */}
             <Dashboard truckLogs={truckLogs} expenses={expenses} isPdfMode={true} />
           </section>
 
@@ -57,13 +55,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
             <h2 className="text-xl font-bold text-white mb-4 border-l-4 border-primary pl-3">
               Detalhes das Viagens
             </h2>
-            {/* O FleetData também recebe os dados filtrados para a tabela */}
             <FleetData 
               type="truck" 
-              data={truckLogs}
-              filteredData={truckLogs} // No PDF, os dados já estão filtrados, então data e filteredData são os mesmos.
+              filteredData={truckLogs}
               isPdfMode={true}
               onAdd={() => {}}
+              onUpdate={() => {}}
               onDelete={() => {}}
               onSearch={() => {}}
             />
@@ -75,10 +72,10 @@ export const ReportView: React.FC<ReportViewProps> = ({ truckLogs, expenses }) =
             </h2>
             <FleetData 
               type="expense" 
-              data={expenses}
-              filteredData={expenses} // Mesma lógica aqui.
+              filteredData={expenses}
               isPdfMode={true}
               onAdd={() => {}}
+              onUpdate={() => {}}
               onDelete={() => {}}
               onSearch={() => {}}
             />
